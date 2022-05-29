@@ -17,5 +17,6 @@ enum class MarvelQueryParam(val value: String) {
     TIMESTAMP("ts"),
     API_KEY("apikey"),
     HASH("hash"),
-    NAME_STARTS_WITH("nameStartsWith")
+    NAME_STARTS_WITH("nameStartsWith"),
+    NAME_MATCH("name")
 }

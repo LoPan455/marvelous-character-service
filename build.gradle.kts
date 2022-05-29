@@ -29,6 +29,7 @@ dependencies {
     implementation("com.squareup.moshi:moshi-adapters:1.13.0")
     implementation("com.squareup.okhttp3:logging-interceptor")
     implementation("commons-codec:commons-codec:1.15")
+    implementation ("io.micrometer:micrometer-registry-prometheus:latest.release")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 

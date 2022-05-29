@@ -4,3 +4,8 @@ spring:
       uri: mongodb://root:example@localhost:27017/marvelous?authSource=admin
 server:
   port: 3505
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"

@@ -14,7 +14,9 @@ class ApplicationCommandLineRunner(
 
 
     override fun run(vararg args: String?): Unit {
-        val characterResult = characterService.getCharacterStartsWith("Magneto")
-        println(characterResult)
+        val characterResult = characterService.getCharacterStartsWith("Thor")
+        characterResult?.let {
+            println(characterResult)
+        }
     }
 }

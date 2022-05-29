@@ -5,6 +5,8 @@ import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
 import com.squareup.moshi.adapters.Rfc3339DateJsonAdapter
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.Metrics
 import io.tjohander.marvelouscharacterservice.enum.MarvelApiUrls
 import io.tjohander.marvelouscharacterservice.enum.MarvelQueryParam
 import io.tjohander.marvelouscharacterservice.model.api.Character
@@ -29,11 +31,13 @@ class CharacterServiceOkHttp(
     private val client: OkHttpClient,
     @Value("\${marvel-api.public-key}") val marvelApiPublicKey: String,
     @Value("\${marvel-api.private-key}") val marvelApiPrivateKey: String,
-    @Autowired private val characterRepository: CharacterRepository
+    @Autowired private val characterRepository: CharacterRepository,
+    private val meterRegistry: MeterRegistry
 ) : ICharacterService {
 
+    private val apiCallsCounter = Metrics.counter("marvel.api.calls.count")
 
-    override fun getCharacterStartsWith(startsWithString: String): Character? {
+    private fun getCharacterFromMarvel(startsWithString: String): Character? {
         val auth = MarvelAuthGenerator.buildAuthString(
             Instant.now(),
             marvelApiPublicKey,
@@ -44,7 +48,7 @@ class CharacterServiceOkHttp(
             .addPathSegment(MarvelApiUrls.API_VERSION.value)
             .addPathSegment(MarvelApiUrls.PUBLIC.value)
             .addPathSegment(MarvelApiUrls.CHARACTER_PATH.value)
-            .addQueryParameter(MarvelQueryParam.NAME_STARTS_WITH.value, startsWithString)
+            .addQueryParameter(MarvelQueryParam.NAME_MATCH.value, startsWithString)
             .addQueryParameter(MarvelQueryParam.TIMESTAMP.value, auth.ts)
             .addQueryParameter(MarvelQueryParam.API_KEY.value, auth.publicKey)
             .addQueryParameter(MarvelQueryParam.HASH.value, auth.md5Hash)
@@ -53,6 +57,7 @@ class CharacterServiceOkHttp(
             .url(url)
             .build()
         client.newCall(request).execute().use { response ->
+            apiCallsCounter.increment()
             if (!response.isSuccessful) throw IOException("Error!: $response")
             println(response.headers.toMultimap().entries)
             val moshi = Moshi.Builder()
@@ -60,11 +65,13 @@ class CharacterServiceOkHttp(
                 .addLast(KotlinJsonAdapterFactory()).build()
             val type = Types.newParameterizedType(DataWrapper::class.java, Character::class.java, Comic::class.java)
             val jsonAdapter: JsonAdapter<DataWrapper<Character>> = moshi.adapter(type)
-            val character: Character? = jsonAdapter.fromJson(response.body!!.string())?.data?.results?.first()
+            val character: Character? = jsonAdapter.fromJson(response.body!!.string())?.data?.results?.firstOrNull()
             return character?.let { it ->
                 characterRepository.save(it)
             }
-//            return jsonAdapter.fromJson(response.body()!!.string())
         }
     }
+
+    override fun getCharacterStartsWith(startsWithString: String): Character? =
+        characterRepository.findCharacterByNameIs(startsWithString) ?: getCharacterFromMarvel(startsWithString)
 }

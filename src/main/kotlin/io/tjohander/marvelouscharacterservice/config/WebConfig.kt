@@ -1,6 +1,7 @@
 package io.tjohander.marvelouscharacterservice.config
 
 import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.PropertyNamingStrategies
 import okhttp3.OkHttpClient
