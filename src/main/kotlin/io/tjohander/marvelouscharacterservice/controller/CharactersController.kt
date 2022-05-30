@@ -24,4 +24,12 @@ class CharactersController(
         return results.toResponse()
     }
 
+    @GetMapping("/paged")
+    @ResponseBody
+    fun getCharactersPagedResponse(@RequestParam limit: Int, @RequestParam offset: Int): CharacterResponse {
+        val results = mutableListOf<Character>()
+        characterService.getCharactersFromMarvelPaged(limit, offset)?.let(results::addAll)
+        return results.toResponse()
+    }
+
 }
